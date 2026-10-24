@@ -1,0 +1,86 @@
+{
+	"name": "PL_SOURCE_TO_SILVER_MAIN",
+	"properties": {
+		"activities": [
+			{
+				"name": "GET SOURCE TABLE LIST",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT TABLE_ID FROM CTRL.table_config WHERE IS_ACTIVE =1 AND SOURCE_SYSTEM = '@{pipeline().parameters.SOURCE_SYSTEM}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZURESQLTABLE",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GET SOURCE TABLE LIST",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GET SOURCE TABLE LIST').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Set variable1",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Test_variable",
+								"value": {
+									"value": "@item().table_id",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"SOURCE_SYSTEM": {
+				"type": "string",
+				"defaultValue": "neon_postgres"
+			}
+		},
+		"variables": {
+			"Test_variable": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}

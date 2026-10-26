@@ -74,6 +74,10 @@
 									"Table_Id": {
 										"value": "@item().TABLE_ID",
 										"type": "Expression"
+									},
+									"ADF_RUN_ID": {
+										"value": "@pipeline().parameters.ADF_RUN_ID",
+										"type": "Expression"
 									}
 								}
 							}

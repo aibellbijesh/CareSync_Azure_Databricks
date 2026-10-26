@@ -198,10 +198,49 @@
 					"referenceName": "AzureDatabricks1",
 					"type": "LinkedServiceReference"
 				}
+			},
+			{
+				"name": "UPDATE ON FAILURE",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Bronze To Silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSqlDatabase",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "update ctrl.audit_log SET\nstatus = 'SUCCESS', \nend_time =  sysutcdatetime(),\nrecords_written = @{activity('Bronze To Silver').output.runOutput}\nwhere adf_run_id = '@{pipeline().parameters.ADF_RUN_ID}' and table_id = @{pipeline().parameters.Table_Id}",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
 			}
 		],
 		"parameters": {
 			"Table_Id": {
+				"type": "string"
+			},
+			"ADF_RUN_ID": {
 				"type": "string"
 			}
 		},

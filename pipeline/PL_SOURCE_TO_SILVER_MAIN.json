@@ -48,6 +48,7 @@
 						"value": "@activity('GET SOURCE TABLE LIST').output.value",
 						"type": "Expression"
 					},
+					"isSequential": false,
 					"activities": [
 						{
 							"name": "INNNER PIPELINE",
@@ -158,7 +159,7 @@
 			},
 			"ADF_RUN_ID": {
 				"type": "string",
-				"defaultValue": "a2"
+				"defaultValue": "a3"
 			}
 		},
 		"variables": {

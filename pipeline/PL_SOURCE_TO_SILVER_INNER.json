@@ -200,7 +200,7 @@
 				}
 			},
 			{
-				"name": "UPDATE ON FAILURE",
+				"name": "UPDATE ON SUCCESS",
 				"type": "Script",
 				"dependsOn": [
 					{

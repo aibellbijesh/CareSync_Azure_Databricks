@@ -28,7 +28,7 @@
 						"referenceName": "DS_AZURESQLTABLE",
 						"type": "DatasetReference"
 					},
-					"firstRowOnly": true
+					"firstRowOnly": false
 				}
 			},
 			{

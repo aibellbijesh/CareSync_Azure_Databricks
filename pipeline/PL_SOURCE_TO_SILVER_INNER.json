@@ -49,78 +49,11 @@
 				}
 			},
 			{
-				"name": "Postgre To Landing",
-				"type": "Copy",
-				"dependsOn": [
-					{
-						"activity": "If Condition1",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"source": {
-						"type": "PostgreSqlV2Source",
-						"query": {
-							"value": "SELECT * FROM PUBLIC.@{activity('READ TABLE DETAILS').output.firstRow.source_table_name}\n@{\n    if(equals(activity('READ TABLE DETAILS').output.firstRow.load_type, 'FULL'),\n        '',\n            concat(\n                    'where ',activity('READ TABLE DETAILS').output.firstRow.watermark_column, ' > ', '''',variables('Watermark_Value'),''''\n            )        \n        )\n}\n",
-							"type": "Expression"
-						},
-						"queryTimeout": "02:00:00"
-					},
-					"sink": {
-						"type": "ParquetSink",
-						"storeSettings": {
-							"type": "AzureBlobFSWriteSettings"
-						},
-						"formatSettings": {
-							"type": "ParquetWriteSettings"
-						}
-					},
-					"enableStaging": false,
-					"translator": {
-						"type": "TabularTranslator",
-						"typeConversion": true,
-						"typeConversionSettings": {
-							"allowDataTruncation": true,
-							"treatBooleanAsNumber": false
-						}
-					}
-				},
-				"inputs": [
-					{
-						"referenceName": "DS_PostgreSQL",
-						"type": "DatasetReference"
-					}
-				],
-				"outputs": [
-					{
-						"referenceName": "DS_Parquet",
-						"type": "DatasetReference",
-						"parameters": {
-							"Container": "landing",
-							"Folder": {
-								"value": "@concat('raw/',activity('READ TABLE DETAILS').output.firstRow.source_system,'/',activity('READ TABLE DETAILS').output.firstRow.source_table_name,'/',variables('Timestamp'))",
-								"type": "Expression"
-							}
-						}
-					}
-				]
-			},
-			{
 				"name": "Landing To Bronze",
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "Postgre To Landing",
+						"activity": "Switch1",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -362,6 +295,155 @@
 								],
 								"scriptBlockExecutionTimeout": "02:00:00"
 							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Switch1",
+				"type": "Switch",
+				"dependsOn": [
+					{
+						"activity": "If Condition1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@activity('READ TABLE DETAILS').output.firstRow.source_system",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "neon_postgres",
+							"activities": [
+								{
+									"name": "Postgre To Landing",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "PostgreSqlV2Source",
+											"query": {
+												"value": "SELECT * FROM PUBLIC.@{activity('READ TABLE DETAILS').output.firstRow.source_table_name}\n@{\n    if(equals(activity('READ TABLE DETAILS').output.firstRow.load_type, 'FULL'),\n        '',\n            concat(\n                    'where ',activity('READ TABLE DETAILS').output.firstRow.watermark_column, ' > ', '''',variables('Watermark_Value'),''''\n            )        \n        )\n}\n",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00"
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_PostgreSQL",
+											"type": "DatasetReference"
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_Parquet",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": "landing",
+												"Folder": {
+													"value": "@concat('raw/',activity('READ TABLE DETAILS').output.firstRow.source_system,'/',activity('READ TABLE DETAILS').output.firstRow.source_table_name,'/',variables('Timestamp'))",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						},
+						{
+							"value": "adls_csv",
+							"activities": [
+								{
+									"name": "ADLS To Landing",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": false,
+												"modifiedDatetimeStart": {
+													"value": "@variables('Watermark_Value')",
+													"type": "Expression"
+												},
+												"deleteFilesAfterCompletion": false
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_Binary",
+											"type": "DatasetReference",
+											"parameters": {
+												"Folder": {
+													"value": "@activity('READ TABLE DETAILS').output.firstRow.source_path",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_Parquet",
+											"type": "DatasetReference"
+										}
+									]
+								}
+							]
 						}
 					]
 				}

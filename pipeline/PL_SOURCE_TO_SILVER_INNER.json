@@ -53,7 +53,7 @@
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "Switch1",
+						"activity": "Choosing Source System",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -80,6 +80,10 @@
 						},
 						"landing_timestamp": {
 							"value": "@variables('Timestamp')",
+							"type": "Expression"
+						},
+						"source_file_format": {
+							"value": "@coalesce(activity('READ TABLE DETAILS').output.firstRow.source_file_format, '')",
 							"type": "Expression"
 						}
 					}
@@ -300,7 +304,7 @@
 				}
 			},
 			{
-				"name": "Switch1",
+				"name": "Choosing Source System",
 				"type": "Switch",
 				"dependsOn": [
 					{
@@ -414,12 +418,9 @@
 											}
 										},
 										"sink": {
-											"type": "ParquetSink",
+											"type": "BinarySink",
 											"storeSettings": {
 												"type": "AzureBlobFSWriteSettings"
-											},
-											"formatSettings": {
-												"type": "ParquetWriteSettings"
 											}
 										},
 										"enableStaging": false
@@ -432,14 +433,22 @@
 												"Folder": {
 													"value": "@activity('READ TABLE DETAILS').output.firstRow.source_path",
 													"type": "Expression"
-												}
+												},
+												"Container": "source"
 											}
 										}
 									],
 									"outputs": [
 										{
-											"referenceName": "DS_Parquet",
-											"type": "DatasetReference"
+											"referenceName": "DS_Binary",
+											"type": "DatasetReference",
+											"parameters": {
+												"Folder": {
+													"value": "@concat('raw/',activity('READ TABLE DETAILS').output.firstRow.source_system,'/',activity('READ TABLE DETAILS').output.firstRow.source_table_name,'/',variables('Timestamp'))",
+													"type": "Expression"
+												},
+												"Container": "landing"
+											}
 										}
 									]
 								}
